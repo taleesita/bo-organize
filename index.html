@@ -1292,6 +1292,9 @@ function ContainerModal({ container, onClose, onSave }) {
   const [location, setLocation] = useState(container?.location || LOCATIONS[0]);
   const [customLocation, setCustomLocation] = useState("");
   const [useCustom, setUseCustom] = useState(false);
+  const [items, setItems] = useState([]);
+  const [newItem, setNewItem] = useState("");
+  const itemInputRef = useRef(null);
 
   useEffect(() => {
     if (container && !LOCATIONS.includes(container.location)) {
@@ -1300,10 +1303,22 @@ function ContainerModal({ container, onClose, onSave }) {
     }
   }, [container]);
 
+  const handleAddItem = () => {
+    const trimmed = newItem.trim();
+    if (!trimmed) return;
+    setItems(prev => [...prev, trimmed]);
+    setNewItem("");
+    setTimeout(() => itemInputRef.current?.focus(), 50);
+  };
+
+  const handleRemoveItem = (idx) => {
+    setItems(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSave = () => {
     const loc = useCustom ? customLocation.trim() : location;
     if (!loc) return;
-    onSave({ type, location: loc });
+    onSave({ type, location: loc, items });
   };
 
   return (
@@ -1339,8 +1354,57 @@ function ContainerModal({ container, onClose, onSave }) {
               {useCustom ? "Choose from list" : "Add custom location"}
             </button>
           </div>
+
+          {/* Items section — only for new containers */}
+          {!container && (
+            <div className="form-group">
+              <label className="form-label">Items</label>
+              {items.length > 0 && (
+                <ul style={{listStyle:'none', marginBottom:'8px'}}>
+                  {items.map((item, idx) => (
+                    <li key={idx} style={{
+                      display:'flex', alignItems:'center', justifyContent:'space-between',
+                      padding:'6px 10px', background:'var(--bg)', borderRadius:'8px',
+                      marginBottom:'4px', fontSize:'0.85rem'
+                    }}>
+                      <span>{item}</span>
+                      <button className="icon-btn danger" onClick={() => handleRemoveItem(idx)} style={{flexShrink:0}}>
+                        <TrashIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div style={{display:'flex', gap:'6px'}}>
+                <input
+                  ref={itemInputRef}
+                  className="form-input"
+                  style={{flex:1, marginBottom:0}}
+                  placeholder="Add an item and press Enter..."
+                  value={newItem}
+                  onChange={e => setNewItem(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddItem())}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  style={{
+                    background:'var(--primary)', color:'white', border:'none',
+                    padding:'10px 14px', borderRadius:'8px', fontWeight:600,
+                    fontSize:'0.85rem', cursor:'pointer', whiteSpace:'nowrap'
+                  }}
+                >Add</button>
+              </div>
+              {items.length > 0 && (
+                <div style={{fontSize:'0.75rem', color:'var(--text-light)', marginTop:'6px'}}>
+                  {items.length} item{items.length !== 1 ? 's' : ''} added
+                </div>
+              )}
+            </div>
+          )}
+
           <button className="form-submit" onClick={handleSave}>
-            {container ? 'Update' : 'Create Container'}
+            {container ? 'Update' : `Create Container${items.length > 0 ? ` with ${items.length} item${items.length !== 1 ? 's' : ''}` : ''}`}
           </button>
         </div>
       </div>
