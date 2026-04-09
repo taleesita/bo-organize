@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bo Organize</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bo Organize">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQm8gT3JnYW5pemUiLCJzaG9ydF9uYW1lIjoiQm8gT3JnYW5pemUiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2YwZjRmOCIsInRoZW1lX2NvbG9yIjoiIzRmNDZlNSJ9">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #818cf8;
+    --primary-dark: #3730a3;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { min-height: 100vh; }
+
+  /* Login screen */
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  .login-screen h1 {
+    font-size: 2.5rem;
+    color: white;
+    margin-bottom: 8px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .login-screen p {
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 32px;
+    font-size: 1.1rem;
+  }
+  .login-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    color: var(--text);
+    border: none;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
+  .login-btn svg { width: 20px; height: 20px; }
+  .login-error {
+    color: #fecaca;
+    margin-top: 16px;
+    font-size: 0.9rem;
+    text-align: center;
+    max-width: 320px;
+  }
+
+  /* Header */
+  .header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .sign-out-btn {
+    background: none;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    cursor: pointer;
+  }
+  .sign-out-btn:hover { background: var(--bg); }
+
+  /* Search bar */
+  .search-bar {
+    padding: 12px 20px;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-input-wrap {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .search-input-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    width: 18px; height: 18px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 10px 14px 10px 42px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: var(--bg);
+  }
+  .search-input:focus { border-color: var(--primary-light); background: white; }
+  .search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--border);
+    border: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-light);
+  }
+
+  /* Main content */
+  .main { padding: 16px 20px 100px; max-width: 800px; margin: 0 auto; }
+
+  /* Container card */
+  .container-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .container-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .container-card.highlight {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  }
+  .container-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .container-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .container-info { flex: 1; min-width: 0; }
+  .container-type {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .container-location {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .container-count {
+    font-size: 0.75rem;
+    color: var(--text-light);
+  }
+  .container-chevron {
+    color: var(--text-light);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .container-chevron.open { transform: rotate(180deg); }
+
+  /* Container body */
+  .container-body { padding: 0 16px 14px; }
+  .items-list { list-style: none; }
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-text { flex: 1; }
+  .item-text.matched {
+    background: linear-gradient(to right, rgba(251, 191, 36, 0.2), transparent);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+  .item-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text-light);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .icon-btn:hover { background: var(--bg); color: var(--text); }
+  .icon-btn.danger:hover { background: #fef2f2; color: var(--danger); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* Add item row */
+  .add-item-row {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .add-item-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    outline: none;
+  }
+  .add-item-input:focus { border-color: var(--primary-light); }
+  .add-item-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-item-btn:hover { background: var(--primary-dark); }
+
+  /* Container actions bar */
+  .container-actions {
+    display: flex;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: var(--text-light);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .action-btn:hover { background: var(--border); color: var(--text); }
+  .action-btn.danger { color: var(--danger); }
+  .action-btn.danger:hover { background: #fef2f2; }
+  .action-btn svg { width: 14px; height: 14px; }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 50;
+  }
+  .fab:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+    animation: fadeIn 0.15s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal-header {
+    padding: 18px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-header h2 { font-size: 1.15rem; font-weight: 700; }
+  .modal-close {
+    background: var(--bg);
+    border: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-light);
+  }
+  .modal-body { padding: 16px 20px 20px; }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    background: white;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--primary-light); }
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .form-submit {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .form-submit:hover { background: var(--primary-dark); }
+
+  /* Move modal item list */
+  .move-target-list { list-style: none; max-height: 300px; overflow-y: auto; }
+  .move-target-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .move-target-item:hover { border-color: var(--primary-light); background: #f5f3ff; }
+  .move-target-item.selected { border-color: var(--primary); background: #ede9fe; }
+  .move-target-number {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .move-target-info { flex: 1; min-width: 0; }
+  .move-target-loc { font-size: 0.85rem; font-weight: 600; }
+  .move-target-type { font-size: 0.7rem; color: var(--text-light); }
+  .move-target-items {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Filter pills */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-pill {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    background: white;
+    color: var(--text-light);
+    transition: all 0.15s;
+  }
+  .filter-pill:hover { border-color: var(--primary-light); }
+  .filter-pill.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-light);
+  }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { font-size: 0.95rem; }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-size: 1.1rem;
+    color: var(--text-light);
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 300;
+    animation: toastIn 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+
+  /* Setup screen */
+  .setup-screen {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  .setup-screen h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .setup-screen p {
+    color: var(--text-light);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .setup-code {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 10px;
+    font-family: 'SF Mono', monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .header h1 { font-size: 1.1rem; }
+    .main { padding: 12px 12px 100px; }
+    .container-header { padding: 12px; }
+    .container-body { padding: 0 12px 12px; }
+    .fab { bottom: 16px; right: 16px; }
+    .filter-bar { padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ── Firebase Config ──
+// REPLACE these values with your Firebase project config
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAdQtvTWdS2iyPdp8r5dBOWmFhgxz5ZYd8",
+  authDomain: "bo-organize.firebaseapp.com",
+  projectId: "bo-organize",
+  storageBucket: "bo-organize.firebasestorage.app",
+  messagingSenderId: "855991232213",
+  appId: "1:855991232213:web:4ab69a47676f1f5c74e45c"
+};
+
+const ALLOWED_EMAILS = [
+  "taly.matiteyahu@gmail.com",
+  "doug.pickard@gmail.com"
+];
+
+const LOCATIONS = [
+  "Outside Storage",
+  "Above Murphy Bed",
+  "Waterheater Closet",
+  "Noa's Closet",
+  "Taly & Doug's Closet",
+  "Coat Closet",
+  "Washer & Dryer Closet",
+  "Above Pantry",
+  "Above Fridge",
+  "Upper Kitchen Cabinets",
+  "Behind Earring Door",
+  "Car"
+];
+
+const CONTAINER_TYPES = [
+  "Box",
+  "Cloth Bin",
+  "Vacuum Sealed Bag",
+  "Uncontained",
+  "Other"
+];
+
+// ── Initial seed data from OCR'd outdoor storage boxes ──
+const SEED_DATA = [
+  {
+    number: 1, type: "Box", location: "Outside Storage",
+    items: ["Lava rocks","Landscaping pins","Plant food spikes","Planter water catcher","Gloves","Misc seeds","Shears","Gardening trowels"]
+  },
+  {
+    number: 2, type: "Box", location: "Outside Storage",
+    items: ["Sandpaper","Table covers (purple)","Chair wheels"]
+  },
+  {
+    number: 3, type: "Box", location: "Outside Storage",
+    items: ["Blinds electronics","Pela window hardware","Peloton pedals","Sleep number air tube caps","Nanit adapter mount for arm","Safe and hamper things","Earring door hooks","Motion light mount","Folding desk electronic parts","HufCo pieces touch up stain","Closet drawer handles","Bathroom drawer handles","Shower door silicon (bottom)","Cabinet drawer bumpers","Bathroom stick on hooks","Toilet brush accessories","Master closet hooks","Shelf supports","Washer drier accessories"]
+  },
+  {
+    number: 4, type: "Box", location: "Outside Storage",
+    items: ["Miscellaneous plumbing pieces","Bidet wire huggers","Linear drain accessories","Upstairs bathroom hose pieces","Plumbing tape","Original thread (upstairs faucet)","Secopad nonslip bath stickies","Metal shelf for upstairs bathroom","Metal tub shelf holder (3x)"]
+  },
+  {
+    number: 5, type: "Box", location: "Outside Storage",
+    items: ["Outdoor lightbulbs","Outdoor light stakes","Photo gear: product spinner","Squirrel bowls","Car backseat organizer arms","Suction cups (3x)","Fly strips","Liquid ant bait","Black and white hooks"]
+  },
+  {
+    number: 6, type: "Box", location: "Outside Storage",
+    items: ["Outlet extenders","Surge protectors","HDMI cables","Mac laptop charger extension","Podcasting microphone","Sidetrak cables","Ancient iPhone","Old Androids","Bedside lights (wires uncut)","Plug in nightlights (2x)","Verizon Fios wire piece","Paint sample blocks"]
+  },
+  {
+    number: 7, type: "Box", location: "Outside Storage",
+    items: ["Treat balls","Doggie shoes","Collapsible dog bowls"]
+  },
+  {
+    number: 8, type: "Box", location: "Outside Storage",
+    items: ["Dog food blender","Pill cases"]
+  },
+  {
+    number: 9, type: "Box", location: "Outside Storage",
+    items: ["Thermacell","Thermacell refills","Bug zapping light","Clip on anti bug thing","Bug repellent bracelets"]
+  },
+  {
+    number: 10, type: "Box", location: "Outside Storage",
+    items: ["Glow in the dark tape","Double sided tape","Packing tape rolls","Scotch tape","E6000 glue","Post it cover up tape","Velcro strips","Velcro dots","Blank flash cards","Binder clips","Command hooks","Command hook stickies"]
+  },
+  {
+    number: 11, type: "Box", location: "Outside Storage",
+    items: ["Self drilling screws","Butterfly screws","Outlet covers","White & black hooks (top down)","Metal closet hooks","Trash can drawer hardware","Lock hardware","Misc screws and hardware"]
+  },
+  {
+    number: 12, type: "Box", location: "Outside Storage",
+    items: ["Stove top light bulb","Halogen lamp bulb (kitchen?)","Oven light bulbs","Paper towel adhesive","Compost bin mount","Kitchen appliance sliders","Kitchen cabinet light parts","Scavolini cabinet shelf support","Scavolini cabinet touch up paint","OXO sink stopper","Spice containers (5x)","Rectangle furniture floor protectors","Round furniture floor protectors","Sticky felt floor protectors","S hooks (upstairs bathroom)","Large Z hooks","Upstairs bathroom towel rod holder","Wet roomba battery (old)","Canvas frame placement spacers","HVAC things"]
+  },
+  {
+    number: 13, type: "Box", location: "Outside Storage",
+    items: ["Squirrel food"]
+  },
+  {
+    number: 14, type: "Vacuum Sealed Bag", location: "Above Murphy Bed",
+    items: ["Uppababy winter liner","Nuna car seat - infant insert and seat pad"]
+  },
+  {
+    number: 15, type: "Vacuum Sealed Bag", location: "Above Murphy Bed",
+    items: ["Baby clothes (newborn - approx 6 months)"]
+  }
+];
+
+// ── Icons ──
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+);
+const ChevronIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="20" height="20"><path d="m6 9 6 6 6-6"/></svg>
+);
+const TrashIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+);
+const MoveIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l3 3 3-3"/><path d="M19 9l3 3-3 3"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+);
+const CopyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+);
+const EditIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+);
+const PlusIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+);
+const BoxIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+);
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+);
+
+// ── App ──
+function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const [firebaseReady, setFirebaseReady] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  // Data
+  const [containers, setContainers] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // UI
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  const [toast, setToast] = useState(null);
+
+  // Modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editContainer, setEditContainer] = useState(null);
+  const [moveItem, setMoveItem] = useState(null); // { item, fromContainerId }
+
+  const dbRef = useRef(null);
+  const unsubRef = useRef(null);
+
+  // Initialize Firebase
+  useEffect(() => {
+    if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
+      setNeedsSetup(true);
+      setAuthLoading(false);
+      return;
+    }
+    try {
+      const app = firebase.initializeApp(FIREBASE_CONFIG);
+      dbRef.current = firebase.firestore();
+      setFirebaseReady(true);
+
+      const unsubAuth = firebase.auth().onAuthStateChanged((u) => {
+        if (u && ALLOWED_EMAILS.includes(u.email)) {
+          setUser(u);
+          setAuthError("");
+        } else if (u) {
+          firebase.auth().signOut();
+          setAuthError("Access restricted. Only authorized accounts may sign in.");
+          setUser(null);
+        } else {
+          setUser(null);
+        }
+        setAuthLoading(false);
+      });
+      return () => unsubAuth();
+    } catch (e) {
+      console.error("Firebase init error:", e);
+      setNeedsSetup(true);
+      setAuthLoading(false);
+    }
+  }, []);
+
+  // Subscribe to Firestore
+  useEffect(() => {
+    if (!firebaseReady || !user) return;
+    setDataLoading(true);
+    const db = dbRef.current;
+    const unsub = db.collection("containers").orderBy("number", "asc").onSnapshot((snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setContainers(data);
+      setDataLoading(false);
+    }, (err) => {
+      console.error("Firestore error:", err);
+      setDataLoading(false);
+    });
+    unsubRef.current = unsub;
+    return () => unsub();
+  }, [firebaseReady, user]);
+
+  // Show toast
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  // Sign in
+  const signIn = async () => {
+    setAuthError("");
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await firebase.auth().signInWithPopup(provider);
+    } catch (e) {
+      if (e.code !== "auth/popup-closed-by-user") {
+        setAuthError(e.message);
+      }
+    }
+  };
+
+  // Sign out
+  const signOut = () => firebase.auth().signOut();
+
+  // ── CRUD operations ──
+  const getNextNumber = () => {
+    if (containers.length === 0) return 1;
+    return Math.max(...containers.map(c => c.number)) + 1;
+  };
+
+  const addContainer = async (data) => {
+    const db = dbRef.current;
+    await db.collection("containers").add({
+      number: getNextNumber(),
+      type: data.type,
+      location: data.location,
+      items: data.items || [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast("Container added");
+  };
+
+  const updateContainer = async (id, data) => {
+    const db = dbRef.current;
+    await db.collection("containers").doc(id).update({
+      ...data,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  };
+
+  const deleteContainer = async (id) => {
+    if (!window.confirm("Delete this container and all its items?")) return;
+    const db = dbRef.current;
+    await db.collection("containers").doc(id).delete();
+    showToast("Container deleted");
+  };
+
+  const addItemToContainer = async (containerId, item) => {
+    const container = containers.find(c => c.id === containerId);
+    if (!container) return;
+    const newItems = [...container.items, item];
+    await updateContainer(containerId, { items: newItems });
+    showToast("Item added");
+  };
+
+  const removeItemFromContainer = async (containerId, itemIndex) => {
+    const container = containers.find(c => c.id === containerId);
+    if (!container) return;
+    const newItems = container.items.filter((_, i) => i !== itemIndex);
+    await updateContainer(containerId, { items: newItems });
+    showToast("Item removed");
+  };
+
+  const moveItemToContainer = async (item, fromContainerId, toContainerId) => {
+    const from = containers.find(c => c.id === fromContainerId);
+    const to = containers.find(c => c.id === toContainerId);
+    if (!from || !to) return;
+
+    const fromItems = from.items.filter(i => i !== item);
+    const toItems = [...to.items, item];
+
+    const db = dbRef.current;
+    const batch = db.batch();
+    batch.update(db.collection("containers").doc(fromContainerId), {
+      items: fromItems,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    batch.update(db.collection("containers").doc(toContainerId), {
+      items: toItems,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await batch.commit();
+    showToast(`Moved to #${to.number}`);
+    setMoveItem(null);
+  };
+
+  const copyLabel = (container) => {
+    const lines = [`#${container.number}`, container.type, container.location, "", ...container.items];
+    navigator.clipboard.writeText(lines.join("\n"));
+    showToast("Label copied to clipboard");
+  };
+
+  // Seed data
+  const seedData = async () => {
+    const db = dbRef.current;
+    const batch = db.batch();
+    SEED_DATA.forEach((c) => {
+      const ref = db.collection("containers").doc();
+      batch.set(ref, {
+        ...c,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+    showToast("Loaded outdoor storage data");
+  };
+
+  // ── Fuzzy search ──
+  const allItemsForSearch = useMemo(() => {
+    return containers.flatMap(c =>
+      c.items.map((item, idx) => ({
+        item,
+        itemIndex: idx,
+        containerId: c.id,
+        containerNumber: c.number,
+        containerLocation: c.location,
+        containerType: c.type
+      }))
+    );
+  }, [containers]);
+
+  const fuse = useMemo(() => {
+    return new Fuse(allItemsForSearch, {
+      keys: ["item"],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2
+    });
+  }, [allItemsForSearch]);
+
+  const fuseLoc = useMemo(() => {
+    return new Fuse(containers, {
+      keys: ["location", "type"],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2
+    });
+  }, [containers]);
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    const itemResults = fuse.search(searchQuery);
+    const locResults = fuseLoc.search(searchQuery);
+
+    // Build set of container IDs that have matching items
+    const matchMap = new Map(); // containerId -> Set of item indices
+    itemResults.forEach(r => {
+      if (!matchMap.has(r.item.containerId)) {
+        matchMap.set(r.item.containerId, new Set());
+      }
+      matchMap.get(r.item.containerId).add(r.item.itemIndex);
+    });
+
+    // Add containers matched by location/type
+    locResults.forEach(r => {
+      if (!matchMap.has(r.item.id)) {
+        matchMap.set(r.item.id, new Set());
+      }
+    });
+
+    return matchMap;
+  }, [searchQuery, fuse, fuseLoc]);
+
+  // Filtered containers
+  const filteredContainers = useMemo(() => {
+    let result = containers;
+    if (locationFilter) {
+      result = result.filter(c => c.location === locationFilter);
+    }
+    if (searchResults) {
+      result = result.filter(c => searchResults.has(c.id));
+    }
+    return result;
+  }, [containers, locationFilter, searchResults]);
+
+  // Get unique locations in use
+  const usedLocations = useMemo(() => {
+    const locs = new Set(containers.map(c => c.location));
+    return LOCATIONS.filter(l => locs.has(l));
+  }, [containers]);
+
+  // Toggle expand
+  const toggleExpand = (id) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // ── Rendering ──
+
+  if (authLoading) {
+    return <div className="loading"><div className="spinner"></div>Loading...</div>;
+  }
+
+  if (needsSetup) {
+    return <SetupScreen />;
+  }
+
+  if (!user) {
+    return (
+      <div className="login-screen">
+        <h1>Bo Organize</h1>
+        <p>Keep your stuff findable</p>
+        <button className="login-btn" onClick={signIn}>
+          <GoogleIcon /> Sign in with Google
+        </button>
+        {authError && <div className="login-error">{authError}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="header">
+        <div className="header-left">
+          <h1>Bo Organize</h1>
+        </div>
+        <div className="header-right">
+          {containers.length === 0 && (
+            <button className="action-btn" onClick={seedData} style={{fontSize:'0.75rem'}}>
+              Load starter data
+            </button>
+          )}
+          <img className="user-avatar" src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+          <button className="sign-out-btn" onClick={signOut}>Sign out</button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="search-bar">
+        <div className="search-input-wrap">
+          <SearchIcon />
+          <input
+            className="search-input"
+            placeholder="Search items, locations..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="search-clear" onClick={() => setSearchQuery("")}>&times;</button>
+          )}
+        </div>
+      </div>
+
+      {/* Location filter pills */}
+      {usedLocations.length > 1 && (
+        <div className="filter-bar">
+          <button
+            className={`filter-pill ${!locationFilter ? 'active' : ''}`}
+            onClick={() => setLocationFilter("")}
+          >All</button>
+          {usedLocations.map(loc => (
+            <button
+              key={loc}
+              className={`filter-pill ${locationFilter === loc ? 'active' : ''}`}
+              onClick={() => setLocationFilter(locationFilter === loc ? "" : loc)}
+            >{loc}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="main">
+        {dataLoading ? (
+          <div className="loading" style={{minHeight: '200px'}}><div className="spinner"></div>Loading...</div>
+        ) : filteredContainers.length === 0 ? (
+          <div className="empty-state">
+            <BoxIcon />
+            <p>{searchQuery ? "No matches found" : "No containers yet. Tap + to add one!"}</p>
+          </div>
+        ) : (
+          filteredContainers.map(c => (
+            <ContainerCard
+              key={c.id}
+              container={c}
+              expanded={expandedIds.has(c.id) || (searchResults && searchResults.has(c.id))}
+              onToggle={() => toggleExpand(c.id)}
+              matchedItems={searchResults ? searchResults.get(c.id) : null}
+              onAddItem={(item) => addItemToContainer(c.id, item)}
+              onRemoveItem={(idx) => removeItemFromContainer(c.id, idx)}
+              onMoveItem={(item) => setMoveItem({ item, fromContainerId: c.id })}
+              onCopyLabel={() => copyLabel(c)}
+              onEdit={() => setEditContainer(c)}
+              onDelete={() => deleteContainer(c.id)}
+            />
+          ))
+        )}
+      </div>
+
+      {/* FAB */}
+      <button className="fab" onClick={() => setShowAddModal(true)}>+</button>
+
+      {/* Add/Edit Modal */}
+      {(showAddModal || editContainer) && (
+        <ContainerModal
+          container={editContainer}
+          onClose={() => { setShowAddModal(false); setEditContainer(null); }}
+          onSave={async (data) => {
+            if (editContainer) {
+              await updateContainer(editContainer.id, data);
+              showToast("Container updated");
+            } else {
+              await addContainer(data);
+            }
+            setShowAddModal(false);
+            setEditContainer(null);
+          }}
+        />
+      )}
+
+      {/* Move modal */}
+      {moveItem && (
+        <MoveModal
+          item={moveItem.item}
+          fromContainerId={moveItem.fromContainerId}
+          containers={containers}
+          onMove={(toId) => moveItemToContainer(moveItem.item, moveItem.fromContainerId, toId)}
+          onClose={() => setMoveItem(null)}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+// ── Container Card ──
+function ContainerCard({ container, expanded, onToggle, matchedItems, onAddItem, onRemoveItem, onMoveItem, onCopyLabel, onEdit, onDelete }) {
+  const [newItem, setNewItem] = useState("");
+  const isHighlighted = matchedItems && matchedItems.size > 0;
+
+  const handleAdd = () => {
+    const trimmed = newItem.trim();
+    if (!trimmed) return;
+    onAddItem(trimmed);
+    setNewItem("");
+  };
+
+  return (
+    <div className={`container-card ${isHighlighted ? 'highlight' : ''}`}>
+      <div className="container-header" onClick={onToggle}>
+        <div className="container-number">{container.number}</div>
+        <div className="container-info">
+          <div className="container-type">{container.type}</div>
+          <div className="container-location">{container.location}</div>
+          <div className="container-count">{container.items.length} item{container.items.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className={`container-chevron ${expanded ? 'open' : ''}`}>
+          <ChevronIcon />
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="container-body">
+          {container.items.length > 0 && (
+            <ul className="items-list">
+              {container.items.map((item, idx) => (
+                <li className="item-row" key={idx}>
+                  <span className={`item-text ${matchedItems && matchedItems.has(idx) ? 'matched' : ''}`}>{item}</span>
+                  <div className="item-actions">
+                    <button className="icon-btn" title="Move to another container" onClick={() => onMoveItem(item)}>
+                      <MoveIcon />
+                    </button>
+                    <button className="icon-btn danger" title="Remove item" onClick={() => onRemoveItem(idx)}>
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="add-item-row">
+            <input
+              className="add-item-input"
+              placeholder="Add an item..."
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+            />
+            <button className="add-item-btn" onClick={handleAdd}>Add</button>
+          </div>
+
+          <div className="container-actions">
+            <button className="action-btn" onClick={onCopyLabel}>
+              <CopyIcon /> Copy Label
+            </button>
+            <button className="action-btn" onClick={onEdit}>
+              <EditIcon /> Edit
+            </button>
+            <button className="action-btn danger" onClick={onDelete}>
+              <TrashIcon /> Delete
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Container Modal (Add/Edit) ──
+function ContainerModal({ container, onClose, onSave }) {
+  const [type, setType] = useState(container?.type || "Box");
+  const [location, setLocation] = useState(container?.location || LOCATIONS[0]);
+  const [customLocation, setCustomLocation] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
+
+  useEffect(() => {
+    if (container && !LOCATIONS.includes(container.location)) {
+      setUseCustom(true);
+      setCustomLocation(container.location);
+    }
+  }, [container]);
+
+  const handleSave = () => {
+    const loc = useCustom ? customLocation.trim() : location;
+    if (!loc) return;
+    onSave({ type, location: loc });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{container ? 'Edit Container' : 'New Container'}</h2>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <div className="modal-body">
+          <div className="form-group">
+            <label className="form-label">Container Type</label>
+            <select className="form-select" value={type} onChange={e => setType(e.target.value)}>
+              {CONTAINER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Location</label>
+            {!useCustom ? (
+              <select className="form-select" value={location} onChange={e => setLocation(e.target.value)}>
+                {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            ) : (
+              <input className="form-input" value={customLocation} onChange={e => setCustomLocation(e.target.value)} placeholder="Custom location..." />
+            )}
+            <button
+              onClick={() => setUseCustom(!useCustom)}
+              style={{
+                background:'none', border:'none', color:'var(--primary)', fontSize:'0.8rem',
+                cursor:'pointer', marginTop:'6px', fontWeight:500
+              }}
+            >
+              {useCustom ? "Choose from list" : "Add custom location"}
+            </button>
+          </div>
+          <button className="form-submit" onClick={handleSave}>
+            {container ? 'Update' : 'Create Container'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Move Modal ──
+function MoveModal({ item, fromContainerId, containers, onMove, onClose }) {
+  const targets = containers.filter(c => c.id !== fromContainerId);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return targets;
+    const f = new Fuse(targets, {
+      keys: ["location", "type", "items"],
+      threshold: 0.4,
+      ignoreLocation: true
+    });
+    return f.search(search).map(r => r.item);
+  }, [targets, search]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Move "{item}"</h2>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <div className="modal-body">
+          <div className="form-group">
+            <input
+              className="form-input"
+              placeholder="Search containers..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <ul className="move-target-list">
+            {filtered.map(c => (
+              <li key={c.id} className="move-target-item" onClick={() => onMove(c.id)}>
+                <div className="move-target-number">{c.number}</div>
+                <div className="move-target-info">
+                  <div className="move-target-loc">{c.location}</div>
+                  <div className="move-target-type">{c.type}</div>
+                  <div className="move-target-items">
+                    {c.items.length > 0 ? c.items.join(", ") : "(empty)"}
+                  </div>
+                </div>
+              </li>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{padding:'20px', textAlign:'center', color:'var(--text-light)', fontSize:'0.9rem'}}>
+                No containers found
+              </div>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Setup Screen ──
+function SetupScreen() {
+  return (
+    <div className="setup-screen">
+      <h2>Welcome to Bo Organize!</h2>
+      <p>To get started, you need to set up a Firebase project. Here's how:</p>
+      <p><strong>1.</strong> Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> and create a new project (e.g., "bo-organize")</p>
+      <p><strong>2.</strong> Enable Authentication &rarr; Google sign-in provider</p>
+      <p><strong>3.</strong> Create a Firestore Database (start in production mode)</p>
+      <p><strong>4.</strong> In Firestore Rules, paste:</p>
+      <div className="setup-code">{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /containers/{doc} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email in
+        ["taly.matiteyahu@gmail.com", "doug.pickard@gmail.com"];
+    }
+  }
+}`}</div>
+      <p><strong>5.</strong> Go to Project Settings &rarr; General &rarr; Your Apps &rarr; Add Web App</p>
+      <p><strong>6.</strong> Copy the config values and replace the <code>FIREBASE_CONFIG</code> object at the top of this HTML file:</p>
+      <div className="setup-code">{`const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abc123"
+};`}</div>
+      <p><strong>7.</strong> If hosting on GitHub Pages, add your GitHub Pages URL as an authorized domain in Firebase Authentication &rarr; Settings &rarr; Authorized Domains.</p>
+      <p style={{marginTop: '16px', color: 'var(--text-light)', fontSize: '0.85rem'}}>Once you update the config and reload, you'll be able to sign in!</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
