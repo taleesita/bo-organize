@@ -174,33 +174,40 @@
   }
 
   /* Main content */
-  .main { padding: 16px 20px 100px; max-width: 800px; margin: 0 auto; }
+  .main {
+    padding: 16px 20px 100px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
 
-  /* Container card */
+  /* Container card — always expanded tile */
   .container-card {
     background: var(--card);
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    margin-bottom: 12px;
     overflow: hidden;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
   }
-  .container-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .container-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
   .container-card.highlight {
     border-color: var(--primary-light);
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
   }
   .container-header {
-    padding: 14px 16px;
+    padding: 14px 14px 10px;
     display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    user-select: none;
+    align-items: flex-start;
+    gap: 10px;
   }
   .container-number {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
@@ -208,57 +215,84 @@
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 1rem;
     flex-shrink: 0;
   }
-  .container-info { flex: 1; min-width: 0; }
-  .container-type {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  .container-meta { flex: 1; min-width: 0; }
+  .container-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.7rem;
     font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
   }
-  .container-location {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
+  .chip svg { width: 11px; height: 11px; }
+  /* Location chips — warm tones */
+  .chip-location {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
   }
-  .container-count {
-    font-size: 0.75rem;
+  /* Type chips — cool tones, each type gets its own color */
+  .chip-type-box { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+  .chip-type-cloth-bin { background: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+  .chip-type-vacuum-sealed-bag { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+  .chip-type-uncontained { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .chip-type-other { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .chip-count {
+    background: #f1f5f9;
     color: var(--text-light);
+    border: 1px solid var(--border);
   }
-  .container-chevron {
-    color: var(--text-light);
-    transition: transform 0.2s;
+  .container-card-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
     flex-shrink: 0;
   }
-  .container-chevron.open { transform: rotate(180deg); }
 
-  /* Container body */
-  .container-body { padding: 0 16px 14px; }
-  .items-list { list-style: none; }
+  /* Container body — always visible */
+  .container-body { padding: 0 14px 12px; flex: 1; display: flex; flex-direction: column; }
+  .items-list { list-style: none; flex: 1; }
   .item-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
+    gap: 6px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.82rem;
+    line-height: 1.3;
   }
   .item-row:last-child { border-bottom: none; }
   .item-text { flex: 1; }
   .item-text.matched {
-    background: linear-gradient(to right, rgba(251, 191, 36, 0.2), transparent);
+    background: linear-gradient(to right, rgba(251, 191, 36, 0.25), transparent);
     border-radius: 4px;
-    padding: 2px 4px;
-    margin: -2px -4px;
+    padding: 2px 5px;
+    margin: -2px -5px;
   }
-  .item-actions { display: flex; gap: 4px; }
+  .item-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .item-row:hover .item-actions { opacity: 1; }
+  @media (hover: none) { .item-actions { opacity: 1; } }
   .icon-btn {
     background: none;
     border: none;
-    padding: 4px;
+    padding: 3px;
     cursor: pointer;
     color: var(--text-light);
     border-radius: 6px;
@@ -269,45 +303,46 @@
   }
   .icon-btn:hover { background: var(--bg); color: var(--text); }
   .icon-btn.danger:hover { background: #fef2f2; color: var(--danger); }
-  .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn svg { width: 14px; height: 14px; }
 
   /* Add item row */
   .add-item-row {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     padding-top: 8px;
     border-top: 1px solid var(--border);
-    margin-top: 4px;
+    margin-top: 6px;
   }
   .add-item-input {
     flex: 1;
-    padding: 8px 12px;
+    padding: 7px 10px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     outline: none;
+    min-width: 0;
   }
   .add-item-input:focus { border-color: var(--primary-light); }
   .add-item-btn {
     background: var(--primary);
     color: white;
     border: none;
-    padding: 8px 14px;
+    padding: 7px 12px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
   }
   .add-item-btn:hover { background: var(--primary-dark); }
 
-  /* Container actions bar */
+  /* Container footer actions */
   .container-actions {
     display: flex;
-    gap: 6px;
-    padding-top: 10px;
+    gap: 4px;
+    padding-top: 8px;
     border-top: 1px solid var(--border);
-    margin-top: 8px;
+    margin-top: 6px;
     flex-wrap: wrap;
   }
   .action-btn {
@@ -316,9 +351,9 @@
     gap: 4px;
     background: var(--bg);
     border: 1px solid var(--border);
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 8px;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--text-light);
     cursor: pointer;
     font-weight: 500;
@@ -327,7 +362,7 @@
   .action-btn:hover { background: var(--border); color: var(--text); }
   .action-btn.danger { color: var(--danger); }
   .action-btn.danger:hover { background: #fef2f2; }
-  .action-btn svg { width: 14px; height: 14px; }
+  .action-btn svg { width: 12px; height: 12px; }
 
   /* FAB */
   .fab {
@@ -580,11 +615,19 @@
   }
 
   /* Responsive */
+  @media (max-width: 720px) {
+    .main {
+      grid-template-columns: 1fr;
+      padding: 12px 12px 100px;
+    }
+  }
+  @media (min-width: 1100px) {
+    .main { grid-template-columns: repeat(3, 1fr); }
+  }
   @media (max-width: 480px) {
     .header h1 { font-size: 1.1rem; }
-    .main { padding: 12px 12px 100px; }
-    .container-header { padding: 12px; }
-    .container-body { padding: 0 12px 12px; }
+    .container-header { padding: 12px 12px 8px; }
+    .container-body { padding: 0 12px 10px; }
     .fab { bottom: 16px; right: 16px; }
     .filter-bar { padding: 8px 12px; }
   }
@@ -1092,8 +1135,6 @@ function App() {
             <ContainerCard
               key={c.id}
               container={c}
-              expanded={expandedIds.has(c.id) || (searchResults && searchResults.has(c.id))}
-              onToggle={() => toggleExpand(c.id)}
               matchedItems={searchResults ? searchResults.get(c.id) : null}
               onAddItem={(item) => addItemToContainer(c.id, item)}
               onRemoveItem={(idx) => removeItemFromContainer(c.id, idx)}
@@ -1144,8 +1185,25 @@ function App() {
   );
 }
 
-// ── Container Card ──
-function ContainerCard({ container, expanded, onToggle, matchedItems, onAddItem, onRemoveItem, onMoveItem, onCopyLabel, onEdit, onDelete }) {
+// ── Chip type class helper ──
+function typeChipClass(type) {
+  const slug = type.toLowerCase().replace(/\s+/g, '-');
+  return `chip chip-type-${slug}`;
+}
+
+// ── Type emoji/icon helper ──
+function typeEmoji(type) {
+  switch(type) {
+    case 'Box': return '📦';
+    case 'Cloth Bin': return '🧺';
+    case 'Vacuum Sealed Bag': return '🫧';
+    case 'Uncontained': return '🗂';
+    default: return '📋';
+  }
+}
+
+// ── Container Card — always expanded tile ──
+function ContainerCard({ container, matchedItems, onAddItem, onRemoveItem, onMoveItem, onCopyLabel, onEdit, onDelete }) {
   const [newItem, setNewItem] = useState("");
   const isHighlighted = matchedItems && matchedItems.size > 0;
 
@@ -1158,62 +1216,60 @@ function ContainerCard({ container, expanded, onToggle, matchedItems, onAddItem,
 
   return (
     <div className={`container-card ${isHighlighted ? 'highlight' : ''}`}>
-      <div className="container-header" onClick={onToggle}>
+      <div className="container-header">
         <div className="container-number">{container.number}</div>
-        <div className="container-info">
-          <div className="container-type">{container.type}</div>
-          <div className="container-location">{container.location}</div>
-          <div className="container-count">{container.items.length} item{container.items.length !== 1 ? 's' : ''}</div>
+        <div className="container-meta">
+          <div className="container-chips">
+            <span className={typeChipClass(container.type)}>{typeEmoji(container.type)} {container.type}</span>
+            <span className="chip chip-location">{container.location}</span>
+            <span className="chip chip-count">{container.items.length} item{container.items.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
-        <div className={`container-chevron ${expanded ? 'open' : ''}`}>
-          <ChevronIcon />
+        <div className="container-card-actions">
+          <button className="icon-btn" title="Copy label" onClick={onCopyLabel}><CopyIcon /></button>
+          <button className="icon-btn" title="Edit container" onClick={onEdit}><EditIcon /></button>
         </div>
       </div>
 
-      {expanded && (
-        <div className="container-body">
-          {container.items.length > 0 && (
-            <ul className="items-list">
-              {container.items.map((item, idx) => (
-                <li className="item-row" key={idx}>
-                  <span className={`item-text ${matchedItems && matchedItems.has(idx) ? 'matched' : ''}`}>{item}</span>
-                  <div className="item-actions">
-                    <button className="icon-btn" title="Move to another container" onClick={() => onMoveItem(item)}>
-                      <MoveIcon />
-                    </button>
-                    <button className="icon-btn danger" title="Remove item" onClick={() => onRemoveItem(idx)}>
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="container-body">
+        {container.items.length > 0 && (
+          <ul className="items-list">
+            {container.items.map((item, idx) => (
+              <li className="item-row" key={idx}>
+                <span className={`item-text ${matchedItems && matchedItems.has(idx) ? 'matched' : ''}`}>{item}</span>
+                <div className="item-actions">
+                  <button className="icon-btn" title="Move" onClick={() => onMoveItem(item)}>
+                    <MoveIcon />
+                  </button>
+                  <button className="icon-btn danger" title="Remove" onClick={() => onRemoveItem(idx)}>
+                    <TrashIcon />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
 
-          <div className="add-item-row">
-            <input
-              className="add-item-input"
-              placeholder="Add an item..."
-              value={newItem}
-              onChange={e => setNewItem(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleAdd()}
-            />
-            <button className="add-item-btn" onClick={handleAdd}>Add</button>
-          </div>
-
-          <div className="container-actions">
-            <button className="action-btn" onClick={onCopyLabel}>
-              <CopyIcon /> Copy Label
-            </button>
-            <button className="action-btn" onClick={onEdit}>
-              <EditIcon /> Edit
-            </button>
-            <button className="action-btn danger" onClick={onDelete}>
-              <TrashIcon /> Delete
-            </button>
-          </div>
+        <div className="add-item-row">
+          <input
+            className="add-item-input"
+            placeholder="Add item..."
+            value={newItem}
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleAdd()}
+          />
+          <button className="add-item-btn" onClick={handleAdd}>Add</button>
         </div>
-      )}
+
+        <div className="container-actions">
+          <button className="action-btn" onClick={onCopyLabel}>
+            <CopyIcon /> Copy Label
+          </button>
+          <button className="action-btn danger" onClick={onDelete}>
+            <TrashIcon /> Delete
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
